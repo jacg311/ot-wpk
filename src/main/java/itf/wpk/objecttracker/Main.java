@@ -7,16 +7,20 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
 
+import javax.swing.filechooser.FileSystemView;
+import java.nio.file.FileSystems;
+import java.nio.file.Paths;
+
 public class Main {
     public static void main(String[] args) {
-        OpenCV.loadShared();
-        Mat loadedImage = loadImage(Main.class.getResource("/TestImg.jpg").toString());
+        OpenCV.loadLocally();
+        Mat loadedImage = loadImage(Main.class.getResource("/TestImg.jpg").getPath());
         MatOfRect facesDetected = new MatOfRect();
 
         //Cascade Classifier
         CascadeClassifier cascadeClassifier = new CascadeClassifier();
         int minFaceSize = Math.round(loadedImage.rows() * 0.1f);
-        cascadeClassifier.load(Main.class.getResource("haarcascade_frontalface_default.xml").toString());
+        cascadeClassifier.load(Main.class.getResource("/haarcascade_frontalface_default.xml").getPath());
         cascadeClassifier.detectMultiScale(loadedImage,
                 facesDetected,
                 1.2,
@@ -31,7 +35,7 @@ public class Main {
             Imgproc.rectangle(loadedImage, face.tl(), face.br(), new
                     Scalar(0,0,255), 3);
         }
-        saveImage(loadedImage, "C:\\Users");
+        saveImage(loadedImage, FileSystemView.getFileSystemView().getHomeDirectory().getPath() + "/result.jpg");
     }
 
     public static Mat loadImage(String imagePath) {
