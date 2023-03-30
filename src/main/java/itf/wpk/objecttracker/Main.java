@@ -14,13 +14,13 @@ import java.nio.file.Paths;
 public class Main {
     public static void main(String[] args) {
         OpenCV.loadLocally();
-        Mat loadedImage = loadImage(Main.class.getResource("/TestImg.jpg").getPath());
+        Mat loadedImage = loadImage("./src/main/resources/TestImg.jpg");
         MatOfRect facesDetected = new MatOfRect();
 
         //Cascade Classifier
         CascadeClassifier cascadeClassifier = new CascadeClassifier();
         int minFaceSize = Math.round(loadedImage.rows() * 0.1f);
-        cascadeClassifier.load(Main.class.getResource("/haarcascade_frontalface_default.xml").getPath());
+        cascadeClassifier.load("./src/main/resources/haarcascade_frontalface_default.xml");
         cascadeClassifier.detectMultiScale(loadedImage,
                 facesDetected,
                 1.2,
@@ -35,7 +35,9 @@ public class Main {
             Imgproc.rectangle(loadedImage, face.tl(), face.br(), new
                     Scalar(0,0,255), 3);
         }
-        saveImage(loadedImage, FileSystemView.getFileSystemView().getHomeDirectory().getPath() + "/result.jpg");
+        String savePath = FileSystemView.getFileSystemView().getHomeDirectory().getPath() + "/result.jpg";
+        saveImage(loadedImage, savePath);
+        System.out.println(savePath+" wurde gespeichert!");
     }
 
     public static Mat loadImage(String imagePath) {
