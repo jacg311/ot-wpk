@@ -40,3 +40,7 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Gradle XML ###
+.idea/gradle.xml
+.idea/git_toolbox_prj.xml
