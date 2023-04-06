@@ -7,20 +7,17 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.objdetect.Objdetect;
 
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-
-public class ObjecktTracker {
+public class ObjectTracker {
 
     public static void init() {
         OpenCV.loadLocally();
-        Mat loadedImage = loadImage(getPath("/TestImg.jpg"));
+        Mat loadedImage = loadImage(Util.getPath("/TestImg.jpg"));
         MatOfRect facesDetected = new MatOfRect();
 
         //Cascade Classifier
         CascadeClassifier cascadeClassifier = new CascadeClassifier();
         int minFaceSize = Math.round(loadedImage.rows()* 0.1f);
-            cascadeClassifier.load(getPath("/haarcascade_frontalface_default.xml"));
+            cascadeClassifier.load(Util.getPath("/haarcascade_frontalface_default.xml"));
             cascadeClassifier.detectMultiScale(loadedImage,
         facesDetected,
                 1.2,
@@ -42,11 +39,4 @@ public class ObjecktTracker {
         return Imgcodecs.imread(imagePath);
     }
 
-    public static String getPath(String string) {
-        try {
-            return Paths.get(Main.class.getResource(string).toURI()).toString();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }
