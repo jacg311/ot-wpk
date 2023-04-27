@@ -25,6 +25,7 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
         super("Object Tracking Application");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(640, 480);
+        setMinimumSize(new Dimension(640, 480));
         setLayout(new BorderLayout());
 
         // Create the video output label
@@ -48,13 +49,13 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
 
         if (webcamSelector.getItemCount() > 0) {
             videoCapture.read(frame);
-            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame)));
+            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(getWidth(),getHeight(),Image.SCALE_SMOOTH)));
         } else {
             JOptionPane.showMessageDialog(this, "No webcams detected.", "Error", JOptionPane.ERROR_MESSAGE);
         }
 
         // Create the timer to update the video output
-        timer = new Timer(33, this);
+        timer = new Timer(10, this);
         timer.start();
     }
 
@@ -75,10 +76,9 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
             for (Rect rect : faces.toArray()) {
                 Imgproc.rectangle(frame, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 2);
             }
-            videoOutput.setIcon(Util.scaleImage(new ImageIcon(mat2BufferedImage(frame)), videoOutput.getWidth(), videoOutput.getHeight()));
+            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(getWidth(),getHeight(),Image.SCALE_SMOOTH)));
         }
     }
-
     private BufferedImage mat2BufferedImage(Mat m) {
         int type = BufferedImage.TYPE_BYTE_GRAY;
         if (m.channels() > 1) {
