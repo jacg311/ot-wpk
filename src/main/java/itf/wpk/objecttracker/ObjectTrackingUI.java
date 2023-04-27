@@ -3,8 +3,11 @@ package itf.wpk.objecttracker;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.IOException;
 
 import org.opencv.core.*;
 import org.opencv.core.Point;
@@ -20,6 +23,10 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
     private Timer timer;
     private CascadeClassifier faceCascade;
     private MatOfRect faces;
+    private int cam_width = 640;
+    private int cam_heigh = 480;
+    private int new_width = cam_width;
+    private int new_heigh = cam_heigh;
 
     public ObjectTrackingUI() {
         super("Object Tracking Application");
@@ -31,6 +38,8 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
         // Create the video output label
         videoOutput = new JLabel();
         add(videoOutput, BorderLayout.CENTER);
+        videoOutput.setHorizontalAlignment(0);
+        videoOutput.setHorizontalTextPosition(0);
 
         // Create the webcam selector combo box
         webcamSelector = new JComboBox<>();
@@ -76,7 +85,23 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
             for (Rect rect : faces.toArray()) {
                 Imgproc.rectangle(frame, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 2);
             }
-            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(getWidth(),getHeight(),Image.SCALE_SMOOTH)));
+
+            double scaleX = (double)getSize().width/cam_width;
+            double scaleY = (double)getSize().height/cam_heigh;
+            if (scaleX < scaleY) {  // heigh
+                new_width = (int)(scaleX*cam_width);
+                new_heigh = (int)(scaleX*cam_heigh);
+            }
+            else if (scaleY < scaleX) {  // width
+                new_width = (int)(scaleY*cam_width);
+                new_heigh = (int)(scaleY*cam_heigh);
+            }
+            else {
+                new_width = getWidth();
+                new_heigh = getHeight();
+                videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(getWidth(),getHeight(),Image.SCALE_SMOOTH)));
+            }
+            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(new_width,new_heigh,Image.SCALE_SMOOTH)));
         }
     }
     private BufferedImage mat2BufferedImage(Mat m) {
