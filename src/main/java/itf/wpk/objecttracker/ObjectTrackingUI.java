@@ -57,6 +57,7 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
         timer = new Timer(33, this);
         timer.start();
     }
+
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == webcamSelector) {
             // Change the webcam
@@ -74,7 +75,7 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
             for (Rect rect : faces.toArray()) {
                 Imgproc.rectangle(frame, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 2);
             }
-            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame)));
+            videoOutput.setIcon(Util.scaleImage(new ImageIcon(mat2BufferedImage(frame)), videoOutput.getWidth(), videoOutput.getHeight()));
         }
     }
 
