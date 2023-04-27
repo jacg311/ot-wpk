@@ -18,6 +18,10 @@ import org.opencv.imgproc.*;
 public class ObjectTrackingUI extends JFrame implements ActionListener {
     private JLabel videoOutput;
     private JComboBox<String> webcamSelector;
+    private JCheckBox checkBox1;
+    private JCheckBox checkBox2;
+    private JCheckBox checkBox3;
+    private JPanel panelCheckbox;
     private VideoCapture videoCapture;
     private Mat frame = new Mat();
     private Timer timer;
@@ -40,6 +44,29 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
         add(videoOutput, BorderLayout.CENTER);
         videoOutput.setHorizontalAlignment(0);
         videoOutput.setHorizontalTextPosition(0);
+
+        // Create checkbox on Button
+        panelCheckbox = new JPanel();
+        add(panelCheckbox, BorderLayout.SOUTH);
+
+        checkBox1 = new JCheckBox();
+        checkBox1.setText("CheckBox");
+        GridBagConstraints gbc;
+        gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        panelCheckbox.add(checkBox1, gbc);
+
+        checkBox2 = new JCheckBox();
+        checkBox2.setText("CheckBox");
+        gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        panelCheckbox.add(checkBox2, gbc);
+
+        checkBox3 = new JCheckBox();
+        checkBox3.setText("CheckBox");
+        gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        panelCheckbox.add(checkBox3, gbc);
 
         // Create the webcam selector combo box
         webcamSelector = new JComboBox<>();
