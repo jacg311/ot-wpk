@@ -99,7 +99,6 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
             else {
                 new_width = getWidth();
                 new_heigh = getHeight();
-                videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(getWidth(),getHeight(),Image.SCALE_SMOOTH)));
             }
             videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(new_width,new_heigh,Image.SCALE_SMOOTH)));
         }
