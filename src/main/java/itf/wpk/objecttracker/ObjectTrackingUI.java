@@ -57,19 +57,6 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
         timer = new Timer(33, this);
         timer.start();
     }
-
-    public static void main(String[] args) {
-        // Load the OpenCV library
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-
-        // Create the UI
-        SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                new ObjectTrackingUI().setVisible(true);
-            }
-        });
-    }
-
     public void actionPerformed(ActionEvent e) {
         if (e.getSource() == webcamSelector) {
             // Change the webcam
