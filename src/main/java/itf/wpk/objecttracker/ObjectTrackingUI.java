@@ -1,9 +1,10 @@
 package itf.wpk.objecttracker;
 
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfRect;
 import org.opencv.core.Point;
-import org.opencv.core.*;
+import org.opencv.core.Rect;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.objdetect.CascadeClassifier;
 import org.opencv.videoio.VideoCapture;
 
 import javax.swing.*;
@@ -13,7 +14,10 @@ import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -29,6 +33,7 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
     private int cam_heigh = 480;
     private int new_width = cam_width;
     private int new_heigh = cam_heigh;
+
 
     private final Executor executor = Executors.newFixedThreadPool(3);
 
@@ -73,7 +78,7 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
 
         if (webcamSelector.getItemCount() > 0) {
             videoCapture.read(frame);
-            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(getWidth(),getHeight(),Image.SCALE_SMOOTH)));
+            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(getWidth(), getHeight(), Image.SCALE_SMOOTH)));
         } else {
             JOptionPane.showMessageDialog(this, "No webcams detected.", "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -98,43 +103,57 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
             Mat grayFrame = new Mat();
             Imgproc.cvtColor(frame, grayFrame, Imgproc.COLOR_BGR2GRAY);
 
+            CyclicBarrier barrier = new CyclicBarrier(4);
+            List<RectData> rectDataList = Collections.synchronizedList(new ArrayList<>());
+
             for (var checkbox : checkBoxes) {
-                if (checkbox.isSelected()) {
-                    //executor.execute(() -> {
+                executor.execute(() -> {
+                    if (checkbox.isSelected()) {
                         MatOfRect faces = new MatOfRect();
                         checkbox.getClassifier().detectMultiScale(grayFrame, faces);
 
-                        //synchronized (frame) {
-                            for (Rect rect : faces.toArray()) {
-                                Imgproc.rectangle(frame, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), checkbox.getColor(), 2);
-                            }
-                        //}
+                        rectDataList.add(new RectData(faces.toArray(), checkbox.getColor()));
+                    }
 
-                    //});
+                    try {
+                        barrier.await();
+                    } catch (InterruptedException | BrokenBarrierException ex) {
+                        throw new RuntimeException(ex);
+                    }
+                });
+            }
+            try {
+                barrier.await();
+            } catch (InterruptedException | BrokenBarrierException ex) {
+                throw new RuntimeException(ex);
+            }
+
+            for (RectData rectData : rectDataList) {
+                for (Rect rect : rectData.rects()) {
+                    Imgproc.rectangle(frame, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), rectData.color(), 2);
                 }
             }
 
             long frameTimeNew = System.currentTimeMillis() - frameTimeStart;
-            System.out.println(frameTimeNew);
+            //System.out.println(frameTimeNew);
 
-            double scaleX = (double)getSize().width/cam_width;
-            double scaleY = (double)getSize().height/cam_heigh;
+            double scaleX = (double) getSize().width / cam_width;
+            double scaleY = (double) getSize().height / cam_heigh;
             if (scaleX < scaleY) {  // heigh
-                new_width = (int)(scaleX*cam_width);
-                new_heigh = (int)(scaleX*cam_heigh);
-            }
-            else if (scaleY < scaleX) {  // width
-                new_width = (int)(scaleY*cam_width);
-                new_heigh = (int)(scaleY*cam_heigh);
-            }
-            else {
+                new_width = (int) (scaleX * cam_width);
+                new_heigh = (int) (scaleX * cam_heigh);
+            } else if (scaleY < scaleX) {  // width
+                new_width = (int) (scaleY * cam_width);
+                new_heigh = (int) (scaleY * cam_heigh);
+            } else {
                 new_width = getWidth();
                 new_heigh = getHeight();
             }
 
-            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(new_width,new_heigh,Image.SCALE_SMOOTH)));
+            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(new_width, new_heigh, Image.SCALE_SMOOTH)));
         }
     }
+
     private BufferedImage mat2BufferedImage(Mat m) {
         int type = BufferedImage.TYPE_BYTE_GRAY;
         if (m.channels() > 1) {
