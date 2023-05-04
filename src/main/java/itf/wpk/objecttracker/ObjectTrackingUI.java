@@ -49,6 +49,9 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
         add(videoOutput, BorderLayout.CENTER);
         videoOutput.setHorizontalAlignment(0);
         videoOutput.setHorizontalTextPosition(0);
+        videoOutput.setText("fps: ??");
+        videoOutput.setVerticalAlignment(1);
+        videoOutput.setVerticalTextPosition(1);
 
         // Create checkbox on Button
         panelCheckbox = new JPanel();
@@ -136,6 +139,7 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
 
             long frameTimeNew = System.currentTimeMillis() - frameTimeStart;
             //System.out.println(frameTimeNew);
+            videoOutput.setText("ms: " + String.valueOf(frameTimeNew));
 
             double scaleX = (double) getSize().width / cam_width;
             double scaleY = (double) getSize().height / cam_heigh;
