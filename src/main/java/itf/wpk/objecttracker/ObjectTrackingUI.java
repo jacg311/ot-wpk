@@ -1,36 +1,36 @@
 package itf.wpk.objecttracker;
 
+import org.opencv.core.Point;
+import org.opencv.core.*;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.objdetect.CascadeClassifier;
+import org.opencv.videoio.VideoCapture;
+
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.*;
-import java.awt.geom.AffineTransform;
-import java.awt.image.AffineTransformOp;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
-import java.io.IOException;
-
-import org.opencv.core.*;
-import org.opencv.core.Point;
-import org.opencv.objdetect.CascadeClassifier;
-import org.opencv.videoio.*;
-import org.opencv.imgproc.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 public class ObjectTrackingUI extends JFrame implements ActionListener {
     private JLabel videoOutput;
     private JComboBox<String> webcamSelector;
-    private JCheckBox checkBox1;
-    private JCheckBox checkBox2;
-    private JCheckBox checkBox3;
     private JPanel panelCheckbox;
     private VideoCapture videoCapture;
     private Mat frame = new Mat();
     private Timer timer;
-    private CascadeClassifier faceCascade;
-    private MatOfRect faces;
+    private List<DetectionCheckbox> checkBoxes = new ArrayList<>();
     private int cam_width = 640;
     private int cam_heigh = 480;
     private int new_width = cam_width;
     private int new_heigh = cam_heigh;
+
+    private final Executor executor = Executors.newFixedThreadPool(3);
 
     public ObjectTrackingUI() {
         super("Object Tracking Application");
@@ -49,34 +49,22 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
         panelCheckbox = new JPanel();
         add(panelCheckbox, BorderLayout.SOUTH);
 
-        checkBox1 = new JCheckBox();
-        checkBox1.setText("CheckBox");
-        GridBagConstraints gbc;
-        gbc = new GridBagConstraints();
-        gbc.anchor = GridBagConstraints.WEST;
-        panelCheckbox.add(checkBox1, gbc);
-
-        checkBox2 = new JCheckBox();
-        checkBox2.setText("CheckBox");
-        gbc = new GridBagConstraints();
-        gbc.anchor = GridBagConstraints.WEST;
-        panelCheckbox.add(checkBox2, gbc);
-
-        checkBox3 = new JCheckBox();
-        checkBox3.setText("CheckBox");
-        gbc = new GridBagConstraints();
-        gbc.anchor = GridBagConstraints.WEST;
-        panelCheckbox.add(checkBox3, gbc);
-
         // Create the webcam selector combo box
         webcamSelector = new JComboBox<>();
         webcamSelector.addActionListener(this);
         add(webcamSelector, BorderLayout.NORTH);
 
-        // Load the face cascade classifier
-        faceCascade = new CascadeClassifier();
+        checkBoxes.add(new DetectionCheckbox("Frontal Face Default", "/haarcascade_frontalface_default.xml", 255, 0, 0));
+        checkBoxes.add(new DetectionCheckbox("Frontal Face Alt", "/haarcascade_frontalface_alt.xml", 0, 255, 0));
+        checkBoxes.add(new DetectionCheckbox("Eyes", "/haarcascade_eye.xml", 0, 0, 255));
 
-        faceCascade.load(Util.getPath("/haarcascade_frontalface_default.xml"));
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.anchor = GridBagConstraints.WEST;
+
+        checkBoxes.forEach(checkBox -> {
+            checkBox.setSelected(true);
+            panelCheckbox.add(checkBox, constraints);
+        });
 
         // Initialize the video capture
         videoCapture = new VideoCapture(0);
@@ -104,14 +92,30 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
             videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame)));
         } else {
             // Update the video output
+            long frameTimeStart = System.currentTimeMillis();
+
             videoCapture.read(frame);
             Mat grayFrame = new Mat();
             Imgproc.cvtColor(frame, grayFrame, Imgproc.COLOR_BGR2GRAY);
-            faces = new MatOfRect();
-            faceCascade.detectMultiScale(grayFrame, faces);
-            for (Rect rect : faces.toArray()) {
-                Imgproc.rectangle(frame, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), new Scalar(0, 255, 0), 2);
+
+            for (var checkbox : checkBoxes) {
+                if (checkbox.isSelected()) {
+                    //executor.execute(() -> {
+                        MatOfRect faces = new MatOfRect();
+                        checkbox.getClassifier().detectMultiScale(grayFrame, faces);
+
+                        //synchronized (frame) {
+                            for (Rect rect : faces.toArray()) {
+                                Imgproc.rectangle(frame, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), checkbox.getColor(), 2);
+                            }
+                        //}
+
+                    //});
+                }
             }
+
+            long frameTimeNew = System.currentTimeMillis() - frameTimeStart;
+            System.out.println(frameTimeNew);
 
             double scaleX = (double)getSize().width/cam_width;
             double scaleY = (double)getSize().height/cam_heigh;
@@ -127,6 +131,7 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
                 new_width = getWidth();
                 new_heigh = getHeight();
             }
+
             videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(new_width,new_heigh,Image.SCALE_SMOOTH)));
         }
     }
