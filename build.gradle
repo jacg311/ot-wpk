@@ -1,10 +1,19 @@
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id 'application'
 }
 
-group = 'org.example'
-version = '1.0-SNAPSHOT'
+group = 'itf.wpk'
+version = '1.0.0'
+
+shadowJar {
+    minimize()
+}
+
+application {
+    mainClassName = "itf.wpk.objecttracker.Main"
+}
 
 repositories {
     mavenCentral()
@@ -12,4 +21,13 @@ repositories {
 
 dependencies {
     implementation 'org.openpnp:opencv:4.7.0-0'
+    implementation 'io.github.vincenzopalazzo:material-ui-swing:1.1.2'
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'itf.wpk.objecttracker.Main'
+        )
+    }
 }

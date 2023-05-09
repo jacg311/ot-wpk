@@ -27,15 +27,16 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
     private JPanel panelCheckbox;
     private VideoCapture videoCapture;
     private Mat frame = new Mat();
-    private Timer timer;
     private List<DetectionCheckbox> checkBoxes = new ArrayList<>();
-    private int cam_width = 640;
-    private int cam_heigh = 480;
-    private int new_width = cam_width;
-    private int new_heigh = cam_heigh;
+    private int camWidth = 640;
+    private int camHeight = 480;
+    private int newWidth = camWidth;
+    private int newHeight = camHeight;
 
 
     private final Executor executor = Executors.newFixedThreadPool(3);
+    private final List<RectData> rectDataList = Collections.synchronizedList(new ArrayList<>());
+    CyclicBarrier barrier = new CyclicBarrier(4);
 
     public ObjectTrackingUI() {
         super("Object Tracking Application");
@@ -58,13 +59,23 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
         add(panelCheckbox, BorderLayout.SOUTH);
 
         // Create the webcam selector combo box
-        webcamSelector = new JComboBox<>();
+        webcamSelector = new JComboBox<>() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                // Draw text with antialiasing
+                Graphics2D graphics2d = (Graphics2D) g;
+                graphics2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+                super.paintComponent(g);
+            }
+        };
+
         webcamSelector.addActionListener(this);
         add(webcamSelector, BorderLayout.NORTH);
 
-        checkBoxes.add(new DetectionCheckbox("Frontal Face Default", "/haarcascade_frontalface_default.xml", 255, 0, 0));
-        checkBoxes.add(new DetectionCheckbox("Frontal Face Alt", "/haarcascade_frontalface_alt.xml", 0, 255, 0));
-        checkBoxes.add(new DetectionCheckbox("Eyes", "/haarcascade_eye.xml", 0, 0, 255));
+        checkBoxes.add(new DetectionCheckbox(0, "Frontal Face Default", "/haarcascade_frontalface_default.xml", 255, 0, 0));
+        checkBoxes.add(new DetectionCheckbox(1, "Frontal Face Alt", "/haarcascade_frontalface_alt.xml", 0, 255, 0));
+        checkBoxes.add(new DetectionCheckbox(2, "Eyes", "/haarcascade_eye.xml", 0, 0, 255));
 
         GridBagConstraints constraints = new GridBagConstraints();
         constraints.anchor = GridBagConstraints.WEST;
@@ -87,7 +98,7 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
         }
 
         // Create the timer to update the video output
-        timer = new Timer(10, this);
+        Timer timer = new Timer(10, this);
         timer.start();
     }
 
@@ -98,6 +109,7 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
             videoCapture.open(webcamSelector.getSelectedIndex());
             videoCapture.read(frame);
             videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame)));
+
         } else {
             // Update the video output
             long frameTimeStart = System.currentTimeMillis();
@@ -106,15 +118,11 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
             Mat grayFrame = new Mat();
             Imgproc.cvtColor(frame, grayFrame, Imgproc.COLOR_BGR2GRAY);
 
-            CyclicBarrier barrier = new CyclicBarrier(4);
-            List<RectData> rectDataList = Collections.synchronizedList(new ArrayList<>());
-
             for (var checkbox : checkBoxes) {
                 executor.execute(() -> {
                     if (checkbox.isSelected()) {
                         MatOfRect faces = new MatOfRect();
                         checkbox.getClassifier().detectMultiScale(grayFrame, faces);
-
                         rectDataList.add(new RectData(faces.toArray(), checkbox.getColor()));
                     }
 
@@ -125,6 +133,7 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
                     }
                 });
             }
+
             try {
                 barrier.await();
             } catch (InterruptedException | BrokenBarrierException ex) {
@@ -133,29 +142,36 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
 
             for (RectData rectData : rectDataList) {
                 for (Rect rect : rectData.rects()) {
-                    Imgproc.rectangle(frame, new Point(rect.x, rect.y), new Point(rect.x + rect.width, rect.y + rect.height), rectData.color(), 2);
+                    Imgproc.rectangle(frame,
+                            new Point(rect.x, rect.y),
+                            new Point(rect.x + rect.width, rect.y + rect.height),
+                            rectData.color(),
+                            2
+                    );
                 }
             }
 
-            long frameTimeNew = System.currentTimeMillis() - frameTimeStart;
-            //System.out.println(frameTimeNew);
-            videoOutput.setText("ms: " + String.valueOf(frameTimeNew));
+            rectDataList.clear();
 
-            double scaleX = (double) getSize().width / cam_width;
-            double scaleY = (double) getSize().height / cam_heigh;
+            long frameTimeNew = System.currentTimeMillis() - frameTimeStart;
+            videoOutput.setText("ms: " + frameTimeNew);
+
+            double scaleX = (double) getSize().width / camWidth;
+            double scaleY = (double) getSize().height / camHeight;
             if (scaleX < scaleY) {  // heigh
-                new_width = (int) (scaleX * cam_width);
-                new_heigh = (int) (scaleX * cam_heigh);
+                newWidth = (int) (scaleX * camWidth);
+                newHeight = (int) (scaleX * camHeight);
             } else if (scaleY < scaleX) {  // width
-                new_width = (int) (scaleY * cam_width);
-                new_heigh = (int) (scaleY * cam_heigh);
+                newWidth = (int) (scaleY * camWidth);
+                newHeight = (int) (scaleY * camHeight);
             } else {
-                new_width = getWidth();
-                new_heigh = getHeight();
+                newWidth = getWidth();
+                newHeight = getHeight();
             }
 
-            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(new_width, new_heigh, Image.SCALE_SMOOTH)));
+            videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH)));
         }
+
     }
 
     private BufferedImage mat2BufferedImage(Mat m) {
