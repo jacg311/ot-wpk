@@ -126,19 +126,11 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
                         rectDataList.add(new RectData(faces.toArray(), checkbox.getColor()));
                     }
 
-                    try {
-                        barrier.await();
-                    } catch (InterruptedException | BrokenBarrierException ex) {
-                        throw new RuntimeException(ex);
-                    }
+                    _barrier(barrier);
                 });
             }
 
-            try {
-                barrier.await();
-            } catch (InterruptedException | BrokenBarrierException ex) {
-                throw new RuntimeException(ex);
-            }
+            _barrier(barrier);
 
             for (RectData rectData : rectDataList) {
                 for (Rect rect : rectData.rects()) {
@@ -172,6 +164,14 @@ public class ObjectTrackingUI extends JFrame implements ActionListener {
             videoOutput.setIcon(new ImageIcon(mat2BufferedImage(frame).getScaledInstance(newWidth, newHeight, Image.SCALE_SMOOTH)));
         }
 
+    }
+
+    private void _barrier(CyclicBarrier barrier) {
+        try {
+            barrier.await();
+        } catch (InterruptedException | BrokenBarrierException ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     private BufferedImage mat2BufferedImage(Mat m) {
